@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --color-jic-orange: #F97316;
+  --color-jic-orange-deep: #EA580C;
+  --color-jic-orange-soft: #FFF0E5;
+  --color-jic-orange-pale: #FFF7ED;
+  --color-jic-navy: #14243A;
+  --color-jic-blue: #2563EB;
+  --color-jic-blue-bright: #3B82F6;
+  --color-jic-blue-soft: #EFF6FF;
+  --color-jic-blue-pale: #F5F9FF;
+  --color-jic-green: #16A34A;
+  --color-jic-green-deep: #15803D;
+  --color-jic-green-soft: #DCFCE7;
+  --color-jic-green-pale: #F0FDF4;
+  --color-jic-yellow: #EAB308;
+  --color-jic-yellow-bright: #FACC15;
+  --color-jic-yellow-soft: #FEF9C3;
+  --color-jic-yellow-pale: #FFFDE7;
+  --color-jic-bg: #F8FAFC;
+  --color-jic-card: #FFFFFF;
+  --color-jic-text: #172033;
+  --color-jic-text-secondary: #64748B;
+  --color-jic-border: #E2E8F0;
+  --color-jic-muted: #F1F5F9;
+  --color-jic-error: #DC2626;
+  --color-jic-error-bg: #FEF2F2;
+}
+
+:root {
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+body {
+  background-color: #F8FAFC;
+  color: #172033;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.font-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
