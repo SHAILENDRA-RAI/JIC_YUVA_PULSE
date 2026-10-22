@@ -7,6 +7,7 @@ import { SignIn } from '@/pages/auth/SignIn';
 import { Setup } from '@/pages/auth/Setup';
 import { Overview } from '@/pages/Overview';
 import { YUVADirectory } from '@/pages/YUVADirectory';
+import { Availability } from '@/pages/Availability';
 import { ModulePlaceholder } from '@/pages/ModulePlaceholder';
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
             <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index element={<Overview />} />
               <Route path="directory" element={<YUVADirectory />} />
-              <Route path="availability" element={<ModulePlaceholder />} />
+              <Route path="availability" element={<Availability />} />
               <Route path="tasks" element={<ModulePlaceholder />} />
               <Route path="social" element={<ModulePlaceholder />} />
               <Route path="events" element={<ModulePlaceholder />} />
@@ -37,3 +38,4 @@ function App() {
 }
 
 export default App;
+
