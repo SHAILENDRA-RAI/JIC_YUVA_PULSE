@@ -10,6 +10,7 @@ import { YUVADirectory } from '@/pages/YUVADirectory';
 import { Availability } from '@/pages/Availability';
 import { Tasks } from '@/pages/Tasks';
 import { Social } from '@/pages/Social';
+import { Events } from '@/pages/Events';
 import { ModulePlaceholder } from '@/pages/ModulePlaceholder';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
               <Route path="availability" element={<Availability />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="social" element={<Social />} />
-              <Route path="events" element={<ModulePlaceholder />} />
+              <Route path="events" element={<Events />} />
               <Route path="analytics" element={<ModulePlaceholder />} />
               <Route path="notifications" element={<ModulePlaceholder />} />
               <Route path="admin" element={<AdminRoute><ModulePlaceholder /></AdminRoute>} />
