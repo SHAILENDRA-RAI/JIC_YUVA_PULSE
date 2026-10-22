@@ -6,6 +6,7 @@ import { AdminRoute, ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { SignIn } from '@/pages/auth/SignIn';
 import { Setup } from '@/pages/auth/Setup';
 import { Overview } from '@/pages/Overview';
+import { YUVADirectory } from '@/pages/YUVADirectory';
 import { ModulePlaceholder } from '@/pages/ModulePlaceholder';
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
             <Route path="/setup" element={<Setup />} />
             <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index element={<Overview />} />
-              <Route path="directory" element={<ModulePlaceholder />} />
+              <Route path="directory" element={<YUVADirectory />} />
               <Route path="availability" element={<ModulePlaceholder />} />
               <Route path="tasks" element={<ModulePlaceholder />} />
               <Route path="social" element={<ModulePlaceholder />} />
