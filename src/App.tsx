@@ -12,6 +12,7 @@ import { Tasks } from '@/pages/Tasks';
 import { Social } from '@/pages/Social';
 import { Events } from '@/pages/Events';
 import { Analytics } from '@/pages/Analytics';
+import { Notifications } from '@/pages/Notifications';
 import { ModulePlaceholder } from '@/pages/ModulePlaceholder';
 
 function App() {
@@ -30,7 +31,7 @@ function App() {
               <Route path="social" element={<Social />} />
               <Route path="events" element={<Events />} />
               <Route path="analytics" element={<Analytics />} />
-              <Route path="notifications" element={<ModulePlaceholder />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="admin" element={<AdminRoute><ModulePlaceholder /></AdminRoute>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
