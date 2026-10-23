@@ -7,7 +7,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState, LoadingState } from '@/components/ui/EmptyState';
 import { KPICard } from '@/components/ui/KPICard';
 import { Badge } from '@/components/ui/Badge';
-import { formatDate, getGreeting, getTaskStatusDisplay, isOverdue, timeAgo } from '@/lib/utils';
+import { formatDate, getTaskStatusDisplay, isOverdue, timeAgo } from '@/lib/utils';
 import type { Profile, Task, AvailabilityUpdate } from '@/types';
 
 interface ActivityItem {
@@ -83,7 +83,7 @@ export function Overview() {
               <Activity className="w-4 h-4" />
               <span>JIC YUVA PULSE</span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-bold">{getGreeting()}, {profile?.full_name?.split(' ')[0] || 'there'}.</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold">Namaskar, {profile?.full_name?.split(' ')[0] || 'there'}.</h1>
             <p className="text-slate-300 mt-2 max-w-xl">Powering people, tracking progress, and building the next big thing from one connected workspace.</p>
             <p className="text-xs text-slate-400 mt-4">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
           </div>
