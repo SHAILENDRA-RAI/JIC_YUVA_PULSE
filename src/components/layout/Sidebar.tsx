@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Clock, CheckSquare, Share2,
-  Calendar, BarChart3, Bell, Settings, ChevronLeft, Activity,
+  Calendar, BarChart3, Bell, Settings, ChevronLeft, Activity, Building2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ const navItems = [
 
 const adminItems = [
   { to: '/admin', label: 'Administration', icon: Settings },
+  { to: '/department-membership', label: 'Department Membership', icon: Building2 },
 ];
 
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
@@ -42,7 +43,6 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-jic-orange to-jic-orange-deep flex items-center justify-center flex-shrink-0">
             <Activity className="w-6 h-6 text-white" />
@@ -55,7 +55,6 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           )}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {items.map(item => {
             const active = location.pathname === item.to ||
@@ -80,7 +79,6 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           })}
         </nav>
 
-        {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex items-center justify-center py-3 text-slate-400 hover:text-white border-t border-white/10 transition-colors"
