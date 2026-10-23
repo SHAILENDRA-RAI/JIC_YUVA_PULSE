@@ -14,6 +14,7 @@ import { Events } from '@/pages/Events';
 import { Analytics } from '@/pages/Analytics';
 import { Notifications } from '@/pages/Notifications';
 import { Admin } from '@/Admin';
+import { DepartmentAssignments } from '@/pages/DepartmentAssignments';
 import { ModulePlaceholder } from '@/pages/ModulePlaceholder';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="department-membership" element={<AdminRoute><DepartmentAssignments /></AdminRoute>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
