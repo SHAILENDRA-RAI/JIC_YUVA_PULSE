@@ -68,28 +68,50 @@ export function DepartmentAssignments() {
     let failure = '';
 
     if (checked) {
-      const { error: insertError } = await supabase.from('member_departments').insert({
-        member_id: member.id,
-        department_id: department.id,
-        assignment_type: 'primary',
-      });
-      if (insertError) {
-        failure = insertError.message;
-      } else {
-        setAssignments(previous => [...previous, {
-          id: `local-${department.id}-${member.id}`,
+      // CPO, CCO, COO, etc. are designation groups: a member belongs to one group at a time.
+      const currentAssignment = assignments.find(item => item.member_id === member.id && item.department_id === department.id);
+      const previousAssignments = assignments.filter(item => item.member_id === member.id && item.department_id !== department.id);
+
+      if (!currentAssignment) {
+        const { error: insertError } = await supabase.from('member_departments').insert({
           member_id: member.id,
           department_id: department.id,
           assignment_type: 'primary',
+        });
+        if (insertError) failure = insertError.message;
+      }
+
+      if (!failure && previousAssignments.length > 0) {
+        const { error: removeError } = await supabase.from('member_departments').delete()
+          .eq('member_id', member.id)
+          .neq('department_id', department.id);
+        if (removeError) failure = removeError.message;
+      }
+
+      if (!failure) {
+        const nextAssignment = currentAssignment || {
+          id: `local-${department.id}-${member.id}`,
+          member_id: member.id,
+          department_id: department.id,
+          assignment_type: 'primary' as const,
           start_date: new Date().toISOString().slice(0, 10),
           end_date: null,
-        } as MemberDepartment]);
-        const { error: profileError } = await supabase.from('profiles').update({ designation: department.name }).eq('id', member.id);
+        };
+        setAssignments(previous => [
+          ...previous.filter(item => item.member_id !== member.id),
+          nextAssignment as MemberDepartment,
+        ]);
+
+        const { error: profileError } = await supabase.from('profiles')
+          .update({ designation: department.name }).eq('id', member.id);
         if (profileError) {
           showToast('warning', `Assigned ${member.full_name} to ${department.name}, but could not sync their designation: ${profileError.message}`);
+          setMembers(previous => previous.map(row => row.id === member.id ? { ...row, designation: department.name } : row));
         } else {
           setMembers(previous => previous.map(row => row.id === member.id ? { ...row, designation: department.name } : row));
-          showToast('success', `${member.full_name} added to ${department.name}.`);
+          showToast('success', previousAssignments.length > 0
+            ? `${member.full_name} moved to ${department.name}.`
+            : `${member.full_name} assigned to ${department.name}.`);
         }
       }
     } else {
@@ -99,21 +121,25 @@ export function DepartmentAssignments() {
       if (deleteError) {
         failure = deleteError.message;
       } else {
-        setAssignments(previous => previous.filter(item => !(item.member_id === member.id && item.department_id === department.id)));
-        const otherAssignments = assignments.filter(item => item.member_id === member.id && item.department_id !== department.id);
-        const nextDepartment = departments.find(item => item.id === otherAssignments[0]?.department_id);
+        const remainingAssignments = assignments.filter(item => !(item.member_id === member.id && item.department_id === department.id));
+        setAssignments(remainingAssignments);
+        const nextAssignment = remainingAssignments.find(item => item.member_id === member.id);
+        const nextDepartment = departments.find(item => item.id === nextAssignment?.department_id);
         const nextDesignation = nextDepartment?.name || null;
         const { error: profileError } = await supabase.from('profiles').update({ designation: nextDesignation }).eq('id', member.id);
+        setMembers(previous => previous.map(row => row.id === member.id ? { ...row, designation: nextDesignation } : row));
         if (profileError) {
           showToast('warning', `Removed ${member.full_name} from ${department.name}, but could not sync their designation: ${profileError.message}`);
         } else {
-          setMembers(previous => previous.map(row => row.id === member.id ? { ...row, designation: nextDesignation } : row));
           showToast('success', `${member.full_name} removed from ${department.name}.`);
         }
       }
     }
 
-    if (failure) showToast('error', `Could not update department membership: ${failure}`);
+    if (failure) {
+      showToast('error', `Could not update department membership: ${failure}`);
+      await loadData(true);
+    }
     setBusyKey('');
   }
 
@@ -141,7 +167,7 @@ export function DepartmentAssignments() {
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Could not load department membership: {error}. Check permissions, then refresh.</div>}
 
       <Card>
-        <CardHeader title="Assign YUVAs to groups" subtitle="Select multiple people in each group. A group is not limited to one lead or one member." />
+        <CardHeader title="Assign YUVAs to groups" subtitle="Assign several YUVAs to each group. Each YUVA has one designation group at a time; moving them to another group removes the old group assignment." />
         <CardBody>
           <label className="relative block mb-5">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-jic-text-secondary" />
