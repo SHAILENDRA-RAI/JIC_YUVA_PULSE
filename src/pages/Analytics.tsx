@@ -191,7 +191,15 @@ export function Analytics() {
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-jic-text-secondary flex items-center gap-2">Activity range
             <select value={range} onChange={event => setRange(event.target.value)} className="border border-jic-border bg-white rounded-xl px-3 py-2.5 text-sm text-jic-text">
-              <option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option><option value="all">All activity</option>
+              <option value="5">Last 5 days</option>
+              <option value="10">Last 10 days</option>
+              <option value="15">Last 15 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="60">Last 60 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="180">Last 6 months</option>
+              <option value="365">Last 12 months</option>
+              <option value="all">All activity</option>
             </select>
           </label>
           <button onClick={() => void loadAnalytics(true)} disabled={refreshing} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-jic-border bg-white text-sm font-semibold text-jic-text hover:bg-jic-muted disabled:opacity-50">
