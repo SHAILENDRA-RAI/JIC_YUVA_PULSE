@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Clock, CheckSquare, Share2,
-  Calendar, BarChart3, Bell, Settings, ChevronLeft, Activity, Building2,
+  Calendar, BarChart3, Bell, Settings, ChevronLeft, Activity, Building2, MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
