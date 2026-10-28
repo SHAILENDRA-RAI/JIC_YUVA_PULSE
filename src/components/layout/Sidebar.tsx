@@ -15,6 +15,7 @@ const navItems = [
   { to: '/social', label: 'Social Engagement', icon: Share2 },
   { to: '/events', label: 'Events', icon: Calendar },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/chat', label: 'Pulse Chat', icon: MessageCircle },
   { to: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
