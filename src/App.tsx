@@ -33,6 +33,7 @@ function App() {
               <Route path="social" element={<Social />} />
               <Route path="events" element={<Events />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="chat" element={<Chat />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="department-membership" element={<AdminRoute><DepartmentAssignments /></AdminRoute>} />
