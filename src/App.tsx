@@ -12,6 +12,7 @@ import { Tasks } from '@/pages/Tasks';
 import { Social } from '@/pages/Social';
 import { Events } from '@/pages/Events';
 import { Analytics } from '@/pages/Analytics';
+import { Chat } from '@/pages/Chat';
 import { Notifications } from '@/pages/Notifications';
 import { Admin } from '@/Admin';
 import { DepartmentAssignments } from '@/pages/DepartmentAssignments';
