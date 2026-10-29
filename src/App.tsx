@@ -8,6 +8,7 @@ import { AdminRoute, ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { SignIn } from '@/pages/auth/SignIn';
 import { SignUp } from '@/pages/auth/SignUp';
 import { Setup } from '@/pages/auth/Setup';
+import { PendingApproval } from '@/pages/auth/PendingApproval';
 
 import { Overview } from '@/pages/Overview';
 import { YUVADirectory } from '@/pages/YUVADirectory';
@@ -32,6 +33,12 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/setup" element={<Setup />} />
+
+            {/* Separate route for accounts awaiting approval */}
+            <Route
+              path="/pending-approval"
+              element={<PendingApproval />}
+            />
 
             {/* Protected workspace */}
             <Route
@@ -72,7 +79,6 @@ function App() {
               />
             </Route>
 
-            {/* Redirect unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
