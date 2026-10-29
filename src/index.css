@@ -1,56 +1,151 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  --color-jic-orange: #F97316;
-  --color-jic-orange-deep: #EA580C;
-  --color-jic-orange-soft: #FFF0E5;
-  --color-jic-orange-pale: #FFF7ED;
-  --color-jic-navy: #14243A;
-  --color-jic-blue: #2563EB;
-  --color-jic-blue-bright: #3B82F6;
-  --color-jic-blue-soft: #EFF6FF;
-  --color-jic-blue-pale: #F5F9FF;
-  --color-jic-green: #16A34A;
-  --color-jic-green-deep: #15803D;
-  --color-jic-green-soft: #DCFCE7;
-  --color-jic-green-pale: #F0FDF4;
-  --color-jic-yellow: #EAB308;
-  --color-jic-yellow-bright: #FACC15;
-  --color-jic-yellow-soft: #FEF9C3;
-  --color-jic-yellow-pale: #FFFDE7;
-  --color-jic-bg: #F8FAFC;
-  --color-jic-card: #FFFFFF;
-  --color-jic-text: #172033;
-  --color-jic-text-secondary: #64748B;
-  --color-jic-border: #E2E8F0;
-  --color-jic-muted: #F1F5F9;
-  --color-jic-error: #DC2626;
-  --color-jic-error-bg: #FEF2F2;
-}
+/* =========================================
+   JIC YUVA PULSE
+   Global Design System
+========================================= */
 
 :root {
-  font-family: 'Montserrat', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --jic-orange: #F97316;
+  --jic-orange-deep: #EA580C;
+  --jic-orange-soft: #FFF0E5;
+
+  --jic-navy: #14243A;
+  --jic-background: #F8FAFC;
+  --jic-surface: #FFFFFF;
+
+  --jic-text: #172033;
+  --jic-text-secondary: #64748B;
+  --jic-border: #E2E8F0;
+
+  --jic-radius-sm: 10px;
+  --jic-radius-md: 14px;
+  --jic-radius-lg: 18px;
+  --jic-radius-xl: 24px;
+
+  --jic-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --jic-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --jic-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.09);
+}
+
+/* =========================================
+   Page foundation
+========================================= */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: #F8FAFC;
-  color: #172033;
-  font-family: 'Montserrat', system-ui, sans-serif;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background-color: var(--jic-background);
+  color: var(--jic-text);
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================================
+   Typography
+========================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 .font-inter {
   font-family: 'Inter', sans-serif;
 }
 
+.font-display {
+  font-family: 'Manrope', 'Inter', sans-serif;
+}
+
+/* =========================================
+   Selection and focus
+========================================= */
+
+::selection {
+  background: #FFDFC8;
+  color: #14243A;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.45);
+  outline-offset: 3px;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* =========================================
+   Interaction polish
+========================================= */
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  transition-property:
+    color,
+    background-color,
+    border-color,
+    box-shadow,
+    opacity,
+    transform;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+/* =========================================
+   Animations
+========================================= */
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -62,47 +157,98 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.22s ease-out;
 }
 
 @keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .animate-pulse-soft {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
-/* Custom scrollbar */
+/* =========================================
+   Scrollbar
+========================================= */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
-/* Loading skeleton */
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+  background-clip: padding-box;
+}
+
+/* =========================================
+   Loading skeleton
+========================================= */
+
 .skeleton {
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(
+    90deg,
+    #F1F5F9 25%,
+    #E2E8F0 50%,
+    #F1F5F9 75%
+  );
+
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* =========================================
+   Reduced motion accessibility
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
