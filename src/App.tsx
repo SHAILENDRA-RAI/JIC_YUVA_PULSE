@@ -6,7 +6,9 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { AdminRoute, ProtectedRoute } from '@/components/layout/ProtectedRoute';
 
 import { SignIn } from '@/pages/auth/SignIn';
+import { SignUp } from '@/pages/auth/SignUp';
 import { Setup } from '@/pages/auth/Setup';
+
 import { Overview } from '@/pages/Overview';
 import { YUVADirectory } from '@/pages/YUVADirectory';
 import { Availability } from '@/pages/Availability';
@@ -26,9 +28,12 @@ function App() {
       <ToastProvider>
         <AuthProvider>
           <Routes>
+            {/* Public authentication pages */}
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
             <Route path="/setup" element={<Setup />} />
 
+            {/* Protected workspace */}
             <Route
               path="/"
               element={
@@ -67,6 +72,7 @@ function App() {
               />
             </Route>
 
+            {/* Redirect unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
