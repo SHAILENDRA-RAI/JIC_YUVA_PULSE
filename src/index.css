@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 /* =========================================
    JIC YUVA PULSE
-   TYPOGRAPHY & GLOBAL STYLES
+   GLOBAL DESIGN SYSTEM
 ========================================= */
 
 :root {
@@ -44,9 +44,9 @@
   --jic-radius-lg: 18px;
   --jic-radius-xl: 24px;
 
-  --jic-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
-  --jic-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
-  --jic-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.09);
+  --jic-shadow-sm: 0 2px 6px rgba(20, 36, 58, 0.04);
+  --jic-shadow-md: 0 8px 24px rgba(20, 36, 58, 0.07);
+  --jic-shadow-lg: 0 18px 45px rgba(20, 36, 58, 0.10);
 }
 
 /* =========================================
@@ -63,18 +63,17 @@ body {
   min-width: 320px;
   min-height: 100vh;
 
-  background-color: var(--jic-background);
+  background: var(--jic-background);
   color: var(--jic-text);
 
   font-family: 'Archivo', sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.65;
   font-weight: 400;
 }
 
 /* =========================================
-   DISPLAY TYPOGRAPHY
-   Inspired by bold modern sans-serif type
+   TYPOGRAPHY
 ========================================= */
 
 h1,
@@ -84,65 +83,31 @@ h4,
 h5,
 h6 {
   font-family: 'Archivo', sans-serif;
-  color: var(--jic-text);
+
+  /* Important: allow headings to inherit
+     their parent text color. */
+  color: inherit;
+
+  font-weight: 800;
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-weight: 800;
-}
-
-/* Keep bold heading utilities genuinely bold. */
-
-h1.font-bold,
-h2.font-bold,
-h3.font-bold,
-h4.font-bold,
-h5.font-bold,
-h6.font-bold {
-  font-weight: 800;
-}
-
-h1.font-extrabold,
-h2.font-extrabold,
-h3.font-extrabold,
-h4.font-extrabold,
-h5.font-extrabold,
-h6.font-extrabold {
-  font-weight: 900;
-}
-
-/* Large page headings */
-
 h1 {
+  line-height: 1.08;
   letter-spacing: -0.045em;
-  line-height: 1.12;
 }
-
-/* Secondary headings */
 
 h2 {
-  letter-spacing: -0.035em;
   line-height: 1.2;
+  letter-spacing: -0.035em;
 }
-
-/* Card and section headings */
 
 h3,
 h4 {
-  letter-spacing: -0.025em;
   line-height: 1.3;
+  letter-spacing: -0.025em;
 }
-
-/* =========================================
-   BODY COPY
-========================================= */
 
 p {
   text-wrap: pretty;
@@ -154,39 +119,121 @@ p {
 
 .font-display {
   font-family: 'Archivo', sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  font-weight: 900;
+  letter-spacing: -0.045em;
 }
 
 /* =========================================
-   SELECTION
+   READABILITY
+   Increase small text across the interface
 ========================================= */
 
-::selection {
-  background: #FFDFC8;
-  color: #14243A;
+.text-xs {
+  font-size: 0.8125rem !important;
+  line-height: 1.5 !important;
+}
+
+.text-sm {
+  font-size: 0.9375rem !important;
+  line-height: 1.55 !important;
 }
 
 /* =========================================
-   FOCUS & ACCESSIBILITY
+   DASHBOARD HERO
 ========================================= */
 
-:focus-visible {
-  outline: 3px solid rgba(249, 115, 22, 0.5);
-  outline-offset: 3px;
+/* Fix the dark greeting on the navy banner.
+   This selector is intentionally more specific
+   than ordinary heading and text utilities. */
+
+.bg-jic-navy h1 {
+  color: var(--jic-orange);
+  font-family: 'Archivo', sans-serif;
+  font-size: clamp(2.5rem, 3.8vw, 3.6rem) !important;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+  text-wrap: balance;
 }
 
-button,
-a,
+/* Give the hero banner better proportions. */
+
+.bg-jic-navy.rounded-3xl {
+  padding: clamp(1.75rem, 3vw, 3rem) !important;
+  border-radius: 24px;
+  box-shadow: 0 12px 34px rgba(20, 36, 58, 0.10);
+}
+
+/* Keep supporting text legible over dark backgrounds. */
+
+.bg-jic-navy p {
+  line-height: 1.7;
+}
+
+/* =========================================
+   DASHBOARD KPI CARDS
+========================================= */
+
+.bg-white.rounded-2xl.border.border-jic-border.p-4.flex.flex-col.gap-3 {
+  min-height: 112px;
+  padding: 1.25rem !important;
+
+  border-color: #E1E7F0;
+  border-radius: 18px;
+
+  background: #FFFFFF;
+  box-shadow: var(--jic-shadow-sm);
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.bg-white.rounded-2xl.border.border-jic-border.p-4.flex.flex-col.gap-3:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: var(--jic-shadow-md);
+}
+
+/* =========================================
+   SHARED CARDS
+========================================= */
+
+.bg-white.rounded-2xl.border.border-jic-border.shadow-sm {
+  border-color: #E1E7F0;
+  border-radius: 18px;
+  box-shadow: var(--jic-shadow-sm);
+}
+
+/* Improve shared card header spacing. */
+
+.border-b.border-jic-border {
+  border-color: #E6EBF2;
+}
+
+/* =========================================
+   FORMS AND INPUTS
+========================================= */
+
 input,
 textarea,
 select {
+  font-family: 'Archivo', sans-serif;
+}
+
+input,
+textarea,
+select,
+button {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* =========================================
-   INTERACTION TRANSITIONS
-========================================= */
+input::placeholder,
+textarea::placeholder {
+  color: #94A3B8;
+  opacity: 1;
+}
 
 button,
 a {
@@ -200,6 +247,20 @@ a {
 
   transition-duration: 180ms;
   transition-timing-function: ease-out;
+}
+
+/* =========================================
+   SELECTION AND FOCUS
+========================================= */
+
+::selection {
+  background: #FFDFC8;
+  color: var(--jic-navy);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.5);
+  outline-offset: 3px;
 }
 
 /* =========================================
@@ -302,7 +363,7 @@ a {
 }
 
 /* =========================================
-   REDUCED MOTION
+   ACCESSIBILITY
 ========================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -313,5 +374,20 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+========================================= */
+
+@media (max-width: 768px) {
+  .bg-jic-navy h1 {
+    font-size: clamp(2rem, 8vw, 2.8rem) !important;
+  }
+
+  .bg-jic-navy.rounded-3xl {
+    padding: 1.5rem !important;
+    border-radius: 20px;
   }
 }
