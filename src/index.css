@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,11 +6,11 @@
 
 /* =========================================
    JIC YUVA PULSE
-   Global Design System
+   TYPOGRAPHY & GLOBAL STYLES
 ========================================= */
 
 :root {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Archivo', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,14 +19,25 @@
   --jic-orange: #F97316;
   --jic-orange-deep: #EA580C;
   --jic-orange-soft: #FFF0E5;
+  --jic-orange-pale: #FFF7ED;
 
   --jic-navy: #14243A;
+  --jic-blue: #2563EB;
+  --jic-blue-soft: #EFF6FF;
+
+  --jic-green: #16A34A;
+  --jic-green-soft: #DCFCE7;
+
+  --jic-yellow: #EAB308;
+  --jic-yellow-soft: #FEF9C3;
+
   --jic-background: #F8FAFC;
   --jic-surface: #FFFFFF;
 
   --jic-text: #172033;
   --jic-text-secondary: #64748B;
   --jic-border: #E2E8F0;
+  --jic-muted: #F1F5F9;
 
   --jic-radius-sm: 10px;
   --jic-radius-md: 14px;
@@ -39,7 +50,7 @@
 }
 
 /* =========================================
-   Page foundation
+   PAGE FOUNDATION
 ========================================= */
 
 html {
@@ -55,13 +66,15 @@ body {
   background-color: var(--jic-background);
   color: var(--jic-text);
 
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Archivo', sans-serif;
   font-size: 14px;
   line-height: 1.6;
+  font-weight: 400;
 }
 
 /* =========================================
-   Typography
+   DISPLAY TYPOGRAPHY
+   Inspired by bold modern sans-serif type
 ========================================= */
 
 h1,
@@ -70,16 +83,66 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-family: 'Archivo', sans-serif;
+  color: var(--jic-text);
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
 h1,
 h2,
-h3 {
-  font-weight: 700;
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 800;
 }
+
+/* Keep bold heading utilities genuinely bold. */
+
+h1.font-bold,
+h2.font-bold,
+h3.font-bold,
+h4.font-bold,
+h5.font-bold,
+h6.font-bold {
+  font-weight: 800;
+}
+
+h1.font-extrabold,
+h2.font-extrabold,
+h3.font-extrabold,
+h4.font-extrabold,
+h5.font-extrabold,
+h6.font-extrabold {
+  font-weight: 900;
+}
+
+/* Large page headings */
+
+h1 {
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+}
+
+/* Secondary headings */
+
+h2 {
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+/* Card and section headings */
+
+h3,
+h4 {
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+/* =========================================
+   BODY COPY
+========================================= */
 
 p {
   text-wrap: pretty;
@@ -90,11 +153,13 @@ p {
 }
 
 .font-display {
-  font-family: 'Manrope', 'Inter', sans-serif;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
 }
 
 /* =========================================
-   Selection and focus
+   SELECTION
 ========================================= */
 
 ::selection {
@@ -102,18 +167,14 @@ p {
   color: #14243A;
 }
 
+/* =========================================
+   FOCUS & ACCESSIBILITY
+========================================= */
+
 :focus-visible {
-  outline: 3px solid rgba(249, 115, 22, 0.45);
+  outline: 3px solid rgba(249, 115, 22, 0.5);
   outline-offset: 3px;
 }
-
-button {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* =========================================
-   Interaction polish
-========================================= */
 
 button,
 a,
@@ -122,6 +183,10 @@ textarea,
 select {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* =========================================
+   INTERACTION TRANSITIONS
+========================================= */
 
 button,
 a {
@@ -132,12 +197,13 @@ a {
     box-shadow,
     opacity,
     transform;
+
   transition-duration: 180ms;
   transition-timing-function: ease-out;
 }
 
 /* =========================================
-   Animations
+   ANIMATIONS
 ========================================= */
 
 @keyframes slide-in {
@@ -158,13 +224,13 @@ a {
 
 @keyframes fade-in {
   from {
-    opacity: 0;
     transform: translateY(4px);
+    opacity: 0;
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
@@ -188,7 +254,7 @@ a {
 }
 
 /* =========================================
-   Scrollbar
+   SCROLLBAR
 ========================================= */
 
 ::-webkit-scrollbar {
@@ -203,17 +269,14 @@ a {
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
-  background-clip: padding-box;
 }
 
 /* =========================================
-   Loading skeleton
+   LOADING SKELETON
 ========================================= */
 
 .skeleton {
@@ -239,7 +302,7 @@ a {
 }
 
 /* =========================================
-   Reduced motion accessibility
+   REDUCED MOTION
 ========================================= */
 
 @media (prefers-reduced-motion: reduce) {
