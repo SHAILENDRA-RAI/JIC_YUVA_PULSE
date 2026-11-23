@@ -9,6 +9,8 @@ import { SignIn } from '@/pages/auth/SignIn';
 import { SignUp } from '@/pages/auth/SignUp';
 import { Setup } from '@/pages/auth/Setup';
 import { PendingApproval } from '@/pages/auth/PendingApproval';
+import { ForgotPassword } from '@/pages/auth/ForgotPassword';
+import { ResetPassword } from '@/pages/auth/ResetPassword';
 
 import { Overview } from '@/pages/Overview';
 import { YUVADirectory } from '@/pages/YUVADirectory';
@@ -33,12 +35,11 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/setup" element={<Setup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Separate route for accounts awaiting approval */}
-            <Route
-              path="/pending-approval"
-              element={<PendingApproval />}
-            />
+            <Route path="/pending-approval" element={<PendingApproval />} />
 
             {/* Protected workspace */}
             <Route
@@ -50,7 +51,6 @@ function App() {
               }
             >
               <Route index element={<Overview />} />
-
               <Route path="directory" element={<YUVADirectory />} />
               <Route path="availability" element={<Availability />} />
               <Route path="tasks" element={<Tasks />} />
@@ -59,24 +59,8 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="chat" element={<Chat />} />
               <Route path="notifications" element={<Notifications />} />
-
-              <Route
-                path="admin"
-                element={
-                  <AdminRoute>
-                    <Admin />
-                  </AdminRoute>
-                }
-              />
-
-              <Route
-                path="department-membership"
-                element={
-                  <AdminRoute>
-                    <DepartmentAssignments />
-                  </AdminRoute>
-                }
-              />
+              <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="department-membership" element={<AdminRoute><DepartmentAssignments /></AdminRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
