@@ -1,20 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, Mail, Lock, ArrowRight } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  Lock,
+  Mail,
+  Phone,
+  ShieldCheck,
+} from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
+
+type SignInMode = 'password' | 'phone';
+
+function normalizePhoneNumber(value: string): string | null {
+  const trimmed = value.trim();
+  const compact = trimmed.replace(/[\s()-]/g, '');
+
+  if (/^\d{10}$/.test(compact)) return `+91${compact}`;
+  if (/^91\d{10}$/.test(compact)) return `+${compact}`;
+  if (/^\+[1-9]\d{7,14}$/.test(compact)) return compact;
+  return null;
+}
 
 export function SignIn() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
+  const [mode, setMode] = useState<SignInMode>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [normalizedPhone, setNormalizedPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendSeconds((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
+
+  async function handlePasswordSignIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setLoading(true);
 
     try {
@@ -31,120 +65,32 @@ export function SignIn() {
       showToast('success', 'Signed in successfully.');
       navigate('/', { replace: true });
     } catch {
-      showToast(
-        'error',
-        'Unable to sign in right now. Check your connection and try again.'
-      );
+      showToast('error', 'Unable to sign in right now. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-jic-bg p-4">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-jic-orange to-jic-orange-deep flex items-center justify-center shadow-lg shadow-jic-orange/20 mb-4">
-            <Activity className="w-9 h-9 text-white" />
-          </div>
+  async function sendPhoneOtp(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    const formattedPhone = normalizePhoneNumber(phone);
 
-          <h1 className="text-2xl font-bold text-jic-text">
-            JIC YUVA PULSE
-          </h1>
+    if (!formattedPhone) {
+      showToast('error', 'Enter a valid mobile number. Use 10 digits for India or include the country code, such as +91.');
+      return;
+    }
 
-          <p className="text-sm text-jic-text-secondary mt-1">
-            Powering People. Tracking Progress.
-          </p>
-        </div>
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+        options: {
+          shouldCreateUser: false,
+          channel: 'sms',
+        },
+      });
 
-        <div className="bg-white rounded-2xl border border-jic-border shadow-sm p-6">
-          <h2 className="text-xl font-bold text-jic-text mb-1">
-            Welcome back
-          </h2>
-
-          <p className="text-sm text-jic-text-secondary mb-6">
-            Sign in to access your JIC workspace.
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="email"
-                className="text-sm font-semibold text-jic-text"
-              >
-                Email
-              </label>
-
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-jic-text-secondary" />
-
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="username"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@jecrc.ac.in"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-jic-border text-sm focus:outline-none focus:ring-2 focus:ring-jic-orange/20 focus:border-jic-orange transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="password"
-                className="text-sm font-semibold text-jic-text"
-              >
-                Password
-              </label>
-
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-jic-text-secondary" />
-
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Your password"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-jic-border text-sm focus:outline-none focus:ring-2 focus:ring-jic-orange/20 focus:border-jic-orange transition-all"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-jic-orange hover:bg-jic-orange-deep text-white font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-
-              {!loading && <ArrowRight className="w-4 h-4" />}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-5 border-t border-jic-border text-center">
-            <p className="text-sm text-jic-text-secondary">
-              New to JIC?
-            </p>
-
-            <Link
-              to="/signup"
-              className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-jic-orange hover:text-jic-orange-deep transition-colors"
-            >
-              Create an account
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-
-        <p className="text-xs text-center text-jic-text-secondary mt-5">
-          Access is available only to approved JIC members.
-        </p>
-      </div>
-    </div>
-  );
-}
+      if (error) {
+        showToast('error', error.message);
+        return;
+      }
