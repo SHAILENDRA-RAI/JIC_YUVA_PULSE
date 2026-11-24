@@ -21,7 +21,6 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState, LoadingState } from '@/components/ui/EmptyState';
 import type {
-  Department,
   Event as JICEvent,
   EventAssignment,
   EventResponsibility,
@@ -40,7 +39,6 @@ type RoleDraft = {
   event_id: string;
   name: string;
   description: string;
-  department_id: string;
   required_capacity: number;
   deadline: string;
 };
@@ -83,7 +81,6 @@ const emptyRoleDraft: RoleDraft = {
   event_id: '',
   name: '',
   description: '',
-  department_id: '',
   required_capacity: 1,
   deadline: '',
 };
@@ -148,7 +145,6 @@ export function Events() {
   const [responsibilities, setResponsibilities] = useState<EventResponsibility[]>([]);
   const [assignments, setAssignments] = useState<EventAssignment[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
 
   const [eventDraft, setEventDraft] = useState<EventDraft>(emptyEventDraft);
   const [roleDraft, setRoleDraft] = useState<RoleDraft>(emptyRoleDraft);
@@ -171,25 +167,22 @@ export function Events() {
     setError('');
 
     try {
-      const [eventResult, roleResult, assignmentResult, memberResult, departmentResult] = await Promise.all([
+      const [eventResult, roleResult, assignmentResult, memberResult] = await Promise.all([
         supabase.from('events').select('*').order('start_time', { ascending: true, nullsFirst: false }),
         supabase.from('event_responsibilities').select('*').order('deadline', { ascending: true, nullsFirst: false }),
         supabase.from('event_assignments').select('*').order('created_at', { ascending: true }),
         supabase.from('profiles').select('id, full_name, designation, status').eq('status', 'active').order('full_name'),
-        supabase.from('departments').select('*').eq('status', 'active').order('name'),
       ]);
 
       if (eventResult.error) throw eventResult.error;
       if (roleResult.error) throw roleResult.error;
       if (assignmentResult.error) throw assignmentResult.error;
       if (memberResult.error) throw memberResult.error;
-      if (departmentResult.error) throw departmentResult.error;
 
       setEvents((eventResult.data || []) as JICEvent[]);
       setResponsibilities((roleResult.data || []) as EventResponsibility[]);
       setAssignments((assignmentResult.data || []) as EventAssignment[]);
       setMembers((memberResult.data || []) as Member[]);
-      setDepartments((departmentResult.data || []) as Department[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not load event records.';
       setError(message);
@@ -204,7 +197,6 @@ export function Events() {
   }, []);
 
   const memberMap = useMemo(() => new Map(members.map(member => [member.id, member])), [members]);
-  const departmentMap = useMemo(() => new Map(departments.map(department => [department.id, department])), [departments]);
 
   const interestedCount = assignments.filter(item => item.status === 'interested').length;
   const confirmedCount = assignments.filter(item => ['assigned', 'confirmed'].includes(item.status)).length;
@@ -273,7 +265,6 @@ export function Events() {
       event_id: role.event_id,
       name: role.name,
       description: role.description || '',
-      department_id: role.department_id || '',
       required_capacity: role.required_capacity,
       deadline: role.deadline || '',
     });
@@ -326,7 +317,8 @@ export function Events() {
       event_id: roleDraft.event_id,
       name: roleDraft.name.trim(),
       description: roleDraft.description.trim() || null,
-      department_id: roleDraft.department_id || null,
+      // Every volunteer role is open to all active JIC members.
+      department_id: null,
       required_capacity: Math.max(1, Number(roleDraft.required_capacity) || 1),
       deadline: roleDraft.deadline || null,
     };
@@ -386,26 +378,30 @@ export function Events() {
     }
   }
 
-  async function expressInterest(role: EventResponsibility) {
-    if (!profile) return;
+  async function claimRole(role: EventResponsibility) {
+    if (!profile || profile.status !== 'active') {
+      showToast('error', 'Only active JIC members can take volunteer roles.');
+      return;
+    }
+
     const existing = assignments.find(item => item.responsibility_id === role.id && item.member_id === profile.id);
     if (existing) {
-      showToast('info', `Your response is already recorded as ${pretty(existing.status)}.`);
+      showToast('info', `Your current role status is ${pretty(existing.status)}.`);
       return;
     }
 
     setSaving(true);
     try {
-      const { error: insertError } = await supabase.from('event_assignments').insert({
-        responsibility_id: role.id,
-        member_id: profile.id,
-        status: 'interested',
+      // The database function locks the role row and enforces capacity atomically.
+      const { error: claimError } = await supabase.rpc('claim_event_role', {
+        p_responsibility_id: role.id,
       });
-      if (insertError) throw insertError;
-      showToast('success', 'Your interest has been submitted.');
+      if (claimError) throw claimError;
+      showToast('success', `You have taken the “${role.name}” role.`);
       await loadEvents(true);
     } catch (err) {
-      showToast('error', err instanceof Error ? err.message : 'Could not submit interest.');
+      showToast('error', err instanceof Error ? err.message : 'Could not take this volunteer role.');
+      await loadEvents(true);
     } finally {
       setSaving(false);
     }
@@ -535,9 +531,10 @@ export function Events() {
                 <label className="text-sm font-semibold text-jic-text">Role / responsibility *
                   <input required maxLength={120} value={roleDraft.name} onChange={event => setRoleDraft({ ...roleDraft, name: event.target.value })} className="mt-1.5 w-full rounded-xl border border-jic-border px-3 py-2.5 font-normal" placeholder="e.g. Registration desk" />
                 </label>
-                <label className="text-sm font-semibold text-jic-text">Department
-                  <select value={roleDraft.department_id} onChange={event => setRoleDraft({ ...roleDraft, department_id: event.target.value })} className="mt-1.5 w-full rounded-xl border border-jic-border bg-white px-3 py-2.5 font-normal"><option value="">Any department</option>{departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}</select>
-                </label>
+                <div className="md:col-span-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
+                  <p className="text-sm font-semibold text-emerald-900">Open to all JIC members</p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800">Any active member from any department can take this role while volunteer slots remain.</p>
+                </div>
                 <label className="text-sm font-semibold text-jic-text">Volunteers required
                   <input type="number" min={1} max={500} value={roleDraft.required_capacity} onChange={event => setRoleDraft({ ...roleDraft, required_capacity: Number(event.target.value) })} className="mt-1.5 w-full rounded-xl border border-jic-border px-3 py-2.5 font-normal" />
                 </label>
@@ -642,10 +639,11 @@ export function Events() {
                           <div className="space-y-3">
                             {eventRoles.map(role => {
                               const responseRows = assignments.filter(item => item.responsibility_id === role.id);
-                              const interestedOrAssigned = responseRows.filter(item => ['interested', 'assigned', 'confirmed', 'completed'].includes(item.status)).length;
+                              const claimedCount = responseRows.filter(item => ['interested', 'assigned', 'confirmed', 'completed'].includes(item.status)).length;
                               const myResponse = responseRows.find(item => item.member_id === profile?.id);
-                              const department = role.department_id ? departmentMap.get(role.department_id) : null;
-                              const capacityFull = interestedOrAssigned >= role.required_capacity;
+                              const capacityFull = claimedCount >= role.required_capacity;
+                              const canClaimRole = role.status === 'open' && (!capacityFull || myResponse?.status === 'interested') && !['completed', 'cancelled'].includes(event.status);
+                              const hasActiveClaim = Boolean(myResponse && ['assigned', 'confirmed', 'completed'].includes(myResponse.status));
 
                               return (
                                 <section key={role.id} className="rounded-xl border border-jic-border bg-white p-4">
@@ -653,21 +651,34 @@ export function Events() {
                                     <div className="min-w-0 flex-1">
                                       <div className="flex flex-wrap items-center gap-2">
                                         <h3 className="font-bold text-jic-text">{role.name}</h3>
-                                        <Badge className={role.status === 'open' ? 'bg-emerald-100 text-emerald-800' : role.status === 'filled' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'}>{pretty(role.status)}</Badge>
-                                        <span className="text-xs text-jic-text-secondary">{interestedOrAssigned}/{role.required_capacity} responses</span>
+                                        <Badge className={capacityFull || role.status === 'filled' ? 'bg-blue-100 text-blue-800' : role.status === 'open' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}>{capacityFull ? 'Full' : pretty(role.status)}</Badge>
+                                        <span className="text-xs text-jic-text-secondary">{claimedCount}/{role.required_capacity} slots taken</span>
                                       </div>
                                       {role.description && <p className="mt-1.5 text-sm leading-5 text-jic-text-secondary whitespace-pre-line">{role.description}</p>}
                                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-jic-text-secondary">
-                                        <span>{department?.name || 'Any department'}</span>
+                                        <span className="font-semibold text-emerald-700">Open to all JIC members</span>
                                         <span>Deadline: {formatDate(role.deadline)}</span>
                                       </div>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                                      {!canManage && role.status === 'open' && (
-                                        <button type="button" disabled={saving || Boolean(myResponse) || capacityFull} onClick={() => void expressInterest(role)} className="inline-flex items-center gap-1.5 rounded-xl bg-jic-orange px-3 py-2 text-sm font-semibold text-white hover:bg-jic-orange-deep disabled:cursor-not-allowed disabled:opacity-50">
-                                          {myResponse ? <><Check className="h-4 w-4" /> {pretty(myResponse.status)}</> : capacityFull ? 'Capacity reached' : 'I’m interested'}
+                                      {profile?.status === 'active' && hasActiveClaim && myResponse && (
+                                        <Badge className={assignmentStatusStyle[myResponse.status] || 'bg-slate-100 text-slate-700'}>
+                                          <Check className="h-3.5 w-3.5" /> Your status: {pretty(myResponse.status)}
+                                        </Badge>
+                                      )}
+                                      {profile?.status === 'active' && canClaimRole && !hasActiveClaim && (
+                                        <button
+                                          type="button"
+                                          disabled={saving}
+                                          onClick={() => void claimRole(role)}
+                                          className="inline-flex items-center gap-1.5 rounded-xl bg-jic-orange px-3 py-2 text-sm font-semibold text-white hover:bg-jic-orange-deep disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          {myResponse?.status === 'declined' ? 'Take role again' : myResponse?.status === 'interested' ? 'Confirm my place' : 'Take this role'}
                                         </button>
+                                      )}
+                                      {profile?.status === 'active' && capacityFull && !hasActiveClaim && role.status === 'open' && (
+                                        <Badge className="bg-slate-100 text-slate-600">All slots taken</Badge>
                                       )}
                                       {canManage && (
                                         <>
@@ -715,7 +726,7 @@ export function Events() {
         </CardBody>
       </Card>
 
-      {!canManage && <p className="text-xs text-jic-text-secondary">Browse open volunteer roles, express interest, and wait for a JIC lead or administrator to confirm your assignment.</p>}
+      <p className="text-xs text-jic-text-secondary">Volunteer roles are open to every active JIC member. Select “Take this role” to claim an available slot immediately. When all volunteer slots are taken, the role closes automatically.</p>
       {isAdmin && <p className="text-xs text-jic-text-secondary">Admin controls: edit events and roles, update event and volunteer statuses, or delete records. Deleting an event also deletes its volunteer roles and responses.</p>}
     </div>
   );
