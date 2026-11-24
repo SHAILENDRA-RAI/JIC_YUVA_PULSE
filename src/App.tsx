@@ -1,4 +1,11 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import {
+  HashRouter,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+} from 'react-router-dom';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
@@ -25,23 +32,59 @@ import { Notifications } from '@/pages/Notifications';
 import { Admin } from '@/Admin';
 import { DepartmentAssignments } from '@/pages/DepartmentAssignments';
 
+// Detect password recovery redirects
+function PasswordRecoveryRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get('auth') === 'reset') {
+      // Preserve Supabase query parameters, including its PKCE code.
+      navigate('/reset-password', { replace: true });
+
+      // Remove our routing marker to avoid redirecting again on refresh.
+      url.searchParams.delete('auth');
+
+      window.history.replaceState(
+        window.history.state,
+        '',
+        url.toString()
+      );
+    }
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <HashRouter>
       <ToastProvider>
         <AuthProvider>
+
+          <PasswordRecoveryRedirect />
+
           <Routes>
-            {/* Public authentication pages */}
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/setup" element={<Setup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Separate route for accounts awaiting approval */}
-            <Route path="/pending-approval" element={<PendingApproval />} />
+            <Route
+              path="/forgot-password"
+              element={<ForgotPassword />}
+            />
 
-            {/* Protected workspace */}
+            <Route
+              path="/reset-password"
+              element={<ResetPassword />}
+            />
+
+            <Route
+              path="/pending-approval"
+              element={<PendingApproval />}
+            />
+
             <Route
               path="/"
               element={
@@ -51,6 +94,7 @@ function App() {
               }
             >
               <Route index element={<Overview />} />
+
               <Route path="directory" element={<YUVADirectory />} />
               <Route path="availability" element={<Availability />} />
               <Route path="tasks" element={<Tasks />} />
@@ -59,12 +103,29 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="chat" element={<Chat />} />
               <Route path="notifications" element={<Notifications />} />
-              <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
-              <Route path="department-membership" element={<AdminRoute><DepartmentAssignments /></AdminRoute>} />
+
+              <Route
+                path="admin"
+                element={
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
+                }
+              />
+
+              <Route
+                path="department-membership"
+                element={
+                  <AdminRoute>
+                    <DepartmentAssignments />
+                  </AdminRoute>
+                }
+              />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+
         </AuthProvider>
       </ToastProvider>
     </HashRouter>
