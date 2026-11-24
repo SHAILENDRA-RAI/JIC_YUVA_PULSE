@@ -27,6 +27,7 @@ import type {
   Profile,
   Project,
   Task,
+  TaskAssignee,
   TaskUpdate,
 } from '@/types';
 
@@ -118,6 +119,7 @@ export function Tasks() {
   const { showToast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskAssignees, setTaskAssignees] = useState<TaskAssignee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -158,25 +160,42 @@ export function Tasks() {
       setLoadError(taskResult.error.message);
       setTasks([]);
       setTaskUpdates([]);
+      setTaskAssignees([]);
     } else {
       const loadedTasks = (taskResult.data || []) as Task[];
       setTasks(loadedTasks);
 
       if (loadedTasks.length) {
-        const updateResult = await supabase
-          .from('task_updates')
-          .select('*')
-          .in('task_id', loadedTasks.map(task => task.id))
-          .order('created_at', { ascending: false })
-          .limit(1000);
+        const [updateResult, assigneeResult] = await Promise.all([
+          supabase
+            .from('task_updates')
+            .select('*')
+            .in('task_id', loadedTasks.map(task => task.id))
+            .order('created_at', { ascending: false })
+            .limit(1000),
+          supabase
+            .from('task_assignees')
+            .select('*')
+            .in('task_id', loadedTasks.map(task => task.id))
+            .eq('is_active', true),
+        ]);
+
         if (updateResult.error) {
           setTaskUpdates([]);
           showToast('warning', `Tasks loaded, but progress history could not be loaded: ${updateResult.error.message}`);
         } else {
           setTaskUpdates((updateResult.data || []) as TaskUpdate[]);
         }
+
+        if (assigneeResult.error) {
+          setTaskAssignees([]);
+          showToast('warning', `Tasks loaded, but task participants could not be loaded: ${assigneeResult.error.message}`);
+        } else {
+          setTaskAssignees((assigneeResult.data || []) as TaskAssignee[]);
+        }
       } else {
         setTaskUpdates([]);
+        setTaskAssignees([]);
       }
     }
 
@@ -212,24 +231,47 @@ export function Tasks() {
     return map;
   }, [taskUpdates]);
 
-  const openTasks = tasks.filter(task => task.status === 'open' && !task.assignee_id);
-  const myTasks = tasks.filter(task => task.assignee_id === profile?.id && task.status !== 'completed');
+  const assigneesByTask = useMemo(() => {
+    const map = new Map<string, TaskAssignee[]>();
+    for (const assignment of taskAssignees) {
+      const current = map.get(assignment.task_id) || [];
+      current.push(assignment);
+      map.set(assignment.task_id, current);
+    }
+    return map;
+  }, [taskAssignees]);
+
+  const openTasks = tasks.filter(task =>
+    task.is_claimable && !['completed', 'cancelled'].includes(task.status)
+  );
+  const myTasks = tasks.filter(task =>
+    task.status !== 'completed' &&
+    (
+      task.assignee_id === profile?.id ||
+      (assigneesByTask.get(task.id) || []).some(assignment => assignment.member_id === profile?.id)
+    )
+  );
   const overdueTasks = tasks.filter(isPastDue);
   const completedTasks = tasks.filter(task => task.status === 'completed');
 
   const filteredTasks = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return tasks.filter(task => {
-      if (taskView === 'open' && !(task.status === 'open' && !task.assignee_id)) return false;
-      if (taskView === 'mine' && task.assignee_id !== profile?.id) return false;
+      if (taskView === 'open' && !(task.is_claimable && !['completed', 'cancelled'].includes(task.status))) return false;
+      if (taskView === 'mine' && !(
+        task.assignee_id === profile?.id ||
+        (assigneesByTask.get(task.id) || []).some(assignment => assignment.member_id === profile?.id)
+      )) return false;
       if (taskView === 'completed' && task.status !== 'completed') return false;
 
       const assignee = task.assignee_id ? memberMap.get(task.assignee_id)?.full_name || '' : '';
+      const participantNames = (assigneesByTask.get(task.id) || [])
+        .map(assignment => memberMap.get(assignment.member_id)?.full_name || '');
       const department = task.department_id ? departmentMap.get(task.department_id)?.name || '' : '';
-      const text = [task.title, task.description || '', assignee, department].join(' ').toLowerCase();
+      const text = [task.title, task.description || '', assignee, ...participantNames, department].join(' ').toLowerCase();
       return !needle || text.includes(needle);
     });
-  }, [tasks, taskView, profile?.id, search, memberMap, departmentMap]);
+  }, [tasks, taskView, profile?.id, search, memberMap, departmentMap, assigneesByTask]);
 
   async function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -293,7 +335,7 @@ export function Tasks() {
   }
 
   async function claimTask(task: Task) {
-    if (!profile?.id || task.status !== 'open' || task.assignee_id) return;
+    if (!profile?.id || !task.is_claimable || ['completed', 'cancelled'].includes(task.status)) return;
     setBusyTaskId(task.id);
 
     const { error } = await supabase.rpc('claim_task', { p_task_id: task.id });
@@ -307,7 +349,9 @@ export function Tasks() {
       return;
     }
 
-    showToast('success', 'Task is now assigned to you.');
+    showToast('success', task.assignee_id
+      ? 'You joined this task as a collaborator.'
+      : 'Task is now assigned to you as its owner.');
     await loadData(true);
   }
 
@@ -430,7 +474,7 @@ export function Tasks() {
       )}
 
       <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <Card><CardBody className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center"><ClipboardList className="w-5 h-5" /></div><div><p className="text-sm text-jic-text-secondary">Open for anyone</p><p className="text-2xl font-bold text-jic-text">{openTasks.length}</p></div></CardBody></Card>
+        <Card><CardBody className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center"><ClipboardList className="w-5 h-5" /></div><div><p className="text-sm text-jic-text-secondary">Open to join</p><p className="text-2xl font-bold text-jic-text">{openTasks.length}</p></div></CardBody></Card>
         <Card><CardBody className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center"><UserRound className="w-5 h-5" /></div><div><p className="text-sm text-jic-text-secondary">My active tasks</p><p className="text-2xl font-bold text-jic-text">{myTasks.length}</p></div></CardBody></Card>
         <Card><CardBody className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-red-50 text-red-700 flex items-center justify-center"><Clock3 className="w-5 h-5" /></div><div><p className="text-sm text-jic-text-secondary">Overdue</p><p className="text-2xl font-bold text-jic-text">{overdueTasks.length}</p></div></CardBody></Card>
         <Card><CardBody className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><CheckCircle2 className="w-5 h-5" /></div><div><p className="text-sm text-jic-text-secondary">Completed</p><p className="text-2xl font-bold text-jic-text">{completedTasks.length}</p></div></CardBody></Card>
@@ -508,7 +552,7 @@ export function Tasks() {
 
       {activeTab === 'tasks' ? (
         <Card>
-          <CardHeader title="Task board" subtitle="Open tasks can be claimed by any active YUVA. Assignees can post progress updates as they work." />
+          <CardHeader title="Task board" subtitle="The first member becomes the task owner. Additional active YUVA members can join as collaborators and share progress updates." />
           <CardBody>
             <div className="flex flex-col gap-3 mb-5">
               <label className="relative block">
@@ -535,8 +579,18 @@ export function Tasks() {
                   const assignee = task.assignee_id ? memberMap.get(task.assignee_id) : undefined;
                   const department = task.department_id ? departmentMap.get(task.department_id) : undefined;
                   const taskStatus = displayStatus(task);
-                  const isMine = task.assignee_id === profile?.id;
-                  const isAvailable = task.status === 'open' && !task.assignee_id;
+                  const taskParticipants = assigneesByTask.get(task.id) || [];
+                  const isOwner = task.assignee_id === profile?.id;
+                  const isCollaborator = taskParticipants.some(assignment => assignment.member_id === profile?.id);
+                  const isMine = isOwner || isCollaborator;
+                  const isAvailable = Boolean(
+                    task.is_claimable &&
+                    !['completed', 'cancelled'].includes(task.status) &&
+                    !isMine
+                  );
+                  const participantNames = taskParticipants
+                    .map(assignment => memberMap.get(assignment.member_id)?.full_name)
+                    .filter((name): name is string => Boolean(name));
                   const canPostUpdate = Boolean(profile?.id && (isMine || canManage || task.created_by === profile.id));
                   const history = updatesByTask.get(task.id) || [];
                   const isBusy = busyTaskId === task.id;
@@ -554,7 +608,7 @@ export function Tasks() {
                           </div>
                           {task.description && <p className="text-sm text-jic-text-secondary mt-2 whitespace-pre-line leading-6">{task.description}</p>}
                           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 text-xs text-jic-text-secondary">
-                            <span className="inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{assignee?.full_name || 'Open to claim'}</span>
+                            <span className="inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{participantNames.length ? participantNames.join(', ') : assignee?.full_name || 'Open to claim'}</span>
                             {department && <span>{department.name}</span>}
                             <span className="inline-flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" />{shortDate(task.deadline)}</span>
                           </div>
@@ -588,10 +642,10 @@ export function Tasks() {
                         <div className="flex flex-wrap lg:flex-col lg:items-end gap-2 lg:min-w-[150px]">
                           {isAvailable && profile?.id && (
                             <button type="button" disabled={isBusy} onClick={() => void claimTask(task)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-jic-orange px-4 py-2.5 text-sm font-semibold text-white hover:bg-jic-orange-deep disabled:opacity-50">
-                              <UserRound className="w-4 h-4" /> {isBusy ? 'Taking...' : 'Take task'}
+                              <UserRound className="w-4 h-4" /> {isBusy ? 'Joining...' : task.assignee_id ? 'Join task' : 'Take task'}
                             </button>
                           )}
-                          {isMine && task.status !== 'completed' && task.status !== 'cancelled' && (
+                          {isOwner && task.status !== 'completed' && task.status !== 'cancelled' && (
                             <>
                               {['assigned', 'not_started', 'open'].includes(task.status) && (
                                 <button type="button" disabled={isBusy} onClick={() => void changeTaskStatus(task, 'in_progress')} className="inline-flex items-center justify-center gap-2 rounded-xl bg-jic-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
@@ -605,6 +659,9 @@ export function Tasks() {
                                 <CheckCircle2 className="w-4 h-4" /> Mark complete
                               </button>
                             </>
+                          )}
+                          {isMine && !isOwner && task.status !== 'completed' && task.status !== 'cancelled' && (
+                            <button type="button" onClick={() => setExpandedUpdateId(expandedUpdateId === task.id ? null : task.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-jic-border px-4 py-2.5 text-sm font-semibold text-jic-text hover:bg-jic-muted"><MessageSquareText className="w-4 h-4" /> Add update</button>
                           )}
                           {canManage && !isMine && !isAvailable && task.status !== 'completed' && task.status !== 'cancelled' && (
                             <button type="button" onClick={() => setExpandedUpdateId(expandedUpdateId === task.id ? null : task.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-jic-border px-4 py-2.5 text-sm font-semibold text-jic-text hover:bg-jic-muted"><MessageSquareText className="w-4 h-4" /> Add update</button>
@@ -651,7 +708,7 @@ export function Tasks() {
       )}
 
       {activeTab === 'tasks' && !canManage && (
-        <p className="text-xs text-jic-text-secondary">Take an open task to become its owner. Once assigned, post short progress updates and mark it complete when finished.</p>
+        <p className="text-xs text-jic-text-secondary">Join a task open for collaboration. The first member becomes its owner; additional members join as collaborators and can post shared progress updates.</p>
       )}
     </div>
   );
