@@ -15,7 +15,7 @@ export function ForgotPassword() {
     setLoading(true);
 
     try {
-      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}#/reset-password`;
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}?auth=reset`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (resetError) {
         setError(resetError.message);
