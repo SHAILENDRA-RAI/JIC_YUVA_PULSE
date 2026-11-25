@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bell, Check, CheckCheck, Inbox, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bell, Check, CheckCheck, Inbox, RefreshCw, Search, Smartphone, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -7,6 +7,13 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState, LoadingState } from '@/components/ui/EmptyState';
 import type { Notification } from '@/types';
+import {
+  enableFirebasePushForDevice,
+  getPushDeviceLabel,
+  isFirebasePushSupported,
+  listenForForegroundPush,
+  savePushDeviceRegistration,
+} from '@/lib/firebasePush';
 
 type ReadFilter = 'all' | 'unread' | 'read';
 
@@ -37,6 +44,9 @@ export function Notifications() {
   const [filter, setFilter] = useState<ReadFilter>('all');
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [pushStatus, setPushStatus] = useState<'checking' | 'unsupported' | 'not_enabled' | 'enabled' | 'denied'>('checking');
+  const [pushBusy, setPushBusy] = useState(false);
+  const foregroundUnsubscribe = useRef<(() => void) | null>(null);
 
   async function loadNotifications(isRefresh = false) {
     if (!profile?.id) {
@@ -70,6 +80,81 @@ export function Notifications() {
     // Load again when the signed-in profile changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPushStatus() {
+      if (!profile?.id) return;
+      if (!isFirebasePushSupported()) {
+        setPushStatus('unsupported');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        setPushStatus('denied');
+        return;
+      }
+
+      const { count, error: pushQueryError } = await supabase
+        .from('push_subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.id)
+        .eq('device_label', getPushDeviceLabel());
+
+      if (!active) return;
+      if (pushQueryError) {
+        showToast('error', `Could not check device notification status: ${pushQueryError.message}`);
+        setPushStatus('not_enabled');
+      } else {
+        setPushStatus((count || 0) > 0 ? 'enabled' : 'not_enabled');
+      }
+
+      // Reconnect foreground message handling on a device that previously granted permission.
+      if (Notification.permission === 'granted' && (count || 0) > 0) {
+        try {
+          const push = await enableFirebasePushForDevice();
+          if (active) {
+            foregroundUnsubscribe.current?.();
+            foregroundUnsubscribe.current = listenForForegroundPush(push.messaging, push.registration);
+          }
+        } catch (pushError) {
+          if (active) showToast('warning', pushError instanceof Error ? pushError.message : 'Could not reconnect push notifications.');
+        }
+      }
+    }
+
+    void loadPushStatus();
+    return () => {
+      active = false;
+      foregroundUnsubscribe.current?.();
+      foregroundUnsubscribe.current = null;
+    };
+  }, [profile?.id, showToast]);
+
+  async function enableDeviceNotifications() {
+    if (!profile?.id) return;
+    setPushBusy(true);
+    try {
+      const push = await enableFirebasePushForDevice();
+      await savePushDeviceRegistration(profile.id, push.token);
+      foregroundUnsubscribe.current?.();
+      foregroundUnsubscribe.current = listenForForegroundPush(push.messaging, push.registration);
+      setPushStatus('enabled');
+      await push.registration.showNotification('JIC YUVA PULSE notifications enabled', {
+        body: 'Namaskar! This Android device is ready to receive JIC workspace alerts.',
+        icon: new URL('icons/icon-192.png', push.registration.scope).href,
+        badge: new URL('icons/icon-192.png', push.registration.scope).href,
+      });
+      showToast('success', 'Phone notifications enabled on this device.');
+    } catch (pushError) {
+      showToast('error', pushError instanceof Error ? pushError.message : 'Could not enable phone notifications.');
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        setPushStatus('denied');
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   const unreadCount = useMemo(
     () => notifications.filter(item => !item.read_at).length,
@@ -172,6 +257,37 @@ export function Notifications() {
           </button>
         </div>
       </header>
+
+      <Card>
+        <CardBody className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-jic-text">Phone notifications</h2>
+              <p className="text-sm text-jic-text-secondary mt-1">
+                {pushStatus === 'enabled'
+                  ? 'This device is registered. JIC alerts can appear even when the website is in the background.'
+                  : pushStatus === 'denied'
+                    ? 'Notifications are blocked for this site. Allow them in Android Chrome site settings, then refresh.'
+                    : pushStatus === 'unsupported'
+                      ? 'Open this page in Chrome on your Android phone to enable phone notifications.'
+                      : 'Open JIC YUVA PULSE on your Android phone in Chrome, then enable notifications for this device.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void enableDeviceNotifications()}
+            disabled={pushBusy || pushStatus === 'unsupported' || pushStatus === 'enabled' || pushStatus === 'checking' || pushStatus === 'denied'}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-jic-navy text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            <Bell className="w-4 h-4" />
+            {pushBusy ? 'Enabling...' : pushStatus === 'enabled' ? 'Enabled on this device' : pushStatus === 'denied' ? 'Permission blocked' : pushStatus === 'unsupported' ? 'Use Android Chrome' : 'Enable phone notifications'}
+          </button>
+        </CardBody>
+      </Card>
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card>
