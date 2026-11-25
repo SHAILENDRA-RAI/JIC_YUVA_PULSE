@@ -28,11 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsSetup, setNeedsSetup] = useState(false);
 
   async function loadProfile(uid: string) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', uid)
       .maybeSingle();
+
+    if (error) throw error;
     setProfile(data as Profile | null);
     return data as Profile | null;
   }
@@ -40,38 +42,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    // Initial session/profile loading is performed outside the auth listener.
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       if (!mounted) return;
-      setSession(s);
-      if (s?.user) {
-        loadProfile(s.user.id).then(() => {
-          if (mounted) setLoading(false);
-        });
-      } else {
-        // Check if any profiles exist at all (first-admin setup detection)
-        supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .then(({ count }) => {
-            if (mounted) {
-              setNeedsSetup(count === 0);
-              setLoading(false);
-            }
-          });
-      }
-    });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
-      (async () => {
-        if (!mounted) return;
-        setSession(s);
+      setSession(s);
+
+      try {
         if (s?.user) {
           await loadProfile(s.user.id);
         } else {
-          setProfile(null);
+          // Check if any profiles exist at all (first-admin setup detection).
+          const { count, error } = await supabase
+            .from('profiles')
+            .select('id', { count: 'exact', head: true });
+
+          if (error) throw error;
+          if (mounted) setNeedsSetup(count === 0);
         }
+      } catch (error) {
+        console.error('Could not initialise the signed-in profile:', error);
+      } finally {
         if (mounted) setLoading(false);
-      })();
+      }
+    }).catch((error) => {
+      console.error('Could not restore the Supabase session:', error);
+      if (mounted) setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
+      if (!mounted) return;
+
+      // IMPORTANT: keep this callback synchronous. Calling another Supabase
+      // API from inside onAuthStateChange can deadlock the Supabase client.
+      setSession(s);
+
+      if (!s?.user) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      // getSession() above handles INITIAL_SESSION. Token refreshes do not
+      // require a profile reload.
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+      if (event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
+
+      const userId = s.user.id;
+      setLoading(true);
+
+      // Defer the Supabase query until after the auth callback has returned.
+      window.setTimeout(() => {
+        if (!mounted) return;
+
+        void loadProfile(userId)
+          .catch((error) => {
+            console.error('Could not load the updated profile:', error);
+          })
+          .finally(() => {
+            if (mounted) setLoading(false);
+          });
+      }, 0);
     });
 
     return () => {
