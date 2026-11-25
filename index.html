@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="theme-color" content="#14243A" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="JIC PULSE" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%BASE_URL%icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/icon-192.png" />
     <title>JIC YUVA PULSE | Community Operations</title>
     <meta property="og:image" content="https://bolt.new/static/og_default.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -11,6 +17,10 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Firebase compat SDK is loaded before the Vite app so the app and FCM worker
+         use the same Firebase project configuration. -->
+    <script src="https://www.gstatic.com/firebasejs/13.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/13.4.0/firebase-messaging-compat.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
