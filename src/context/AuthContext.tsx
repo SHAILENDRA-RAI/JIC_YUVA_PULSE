@@ -41,18 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let unsubscribeAuth: (() => void) | null = null;
 
-    // Initial session/profile loading is performed outside the auth listener.
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      if (!mounted) return;
-
-      setSession(s);
-
+    async function initialiseAuth() {
+      // Finish Supabase auth initialisation before registering the listener.
+      // This avoids an initialise/refresh race seen in older auth-js builds.
       try {
-        if (s?.user) {
-          await loadProfile(s.user.id);
+        const { data: { session: initialSession }, error: sessionError } =
+          await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+        if (!mounted) return;
+
+        setSession(initialSession);
+
+        if (initialSession?.user) {
+          await loadProfile(initialSession.user.id);
         } else {
-          // Check if any profiles exist at all (first-admin setup detection).
           const { count, error } = await supabase
             .from('profiles')
             .select('id', { count: 'exact', head: true });
@@ -61,53 +66,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mounted) setNeedsSetup(count === 0);
         }
       } catch (error) {
-        console.error('Could not initialise the signed-in profile:', error);
+        console.error('Could not initialise the JIC session:', error);
       } finally {
         if (mounted) setLoading(false);
       }
-    }).catch((error) => {
-      console.error('Could not restore the Supabase session:', error);
-      if (mounted) setLoading(false);
-    });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
 
-      // IMPORTANT: keep this callback synchronous. Calling another Supabase
-      // API from inside onAuthStateChange can deadlock the Supabase client.
-      setSession(s);
-
-      if (!s?.user) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      // getSession() above handles INITIAL_SESSION. Token refreshes do not
-      // require a profile reload.
-      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
-      if (event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
-
-      const userId = s.user.id;
-      setLoading(true);
-
-      // Defer the Supabase query until after the auth callback has returned.
-      window.setTimeout(() => {
+      // Register only after getSession/profile initialisation has completed.
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
         if (!mounted) return;
 
-        void loadProfile(userId)
-          .catch((error) => {
-            console.error('Could not load the updated profile:', error);
-          })
-          .finally(() => {
-            if (mounted) setLoading(false);
-          });
-      }, 0);
-    });
+        // Keep this callback synchronous. Do not call Supabase APIs directly here.
+        setSession(nextSession);
+
+        if (!nextSession?.user) {
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        // Initial session has already been loaded above. Token refresh does not
+        // require another profile query.
+        if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+        if (event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
+
+        const userId = nextSession.user.id;
+        setLoading(true);
+
+        // Run the profile request after the auth callback has returned.
+        window.setTimeout(() => {
+          if (!mounted) return;
+
+          void loadProfile(userId)
+            .catch((error) => {
+              console.error('Could not load the updated profile:', error);
+            })
+            .finally(() => {
+              if (mounted) setLoading(false);
+            });
+        }, 0);
+      });
+
+      unsubscribeAuth = () => subscription.unsubscribe();
+    }
+
+    void initialiseAuth();
 
     return () => {
       mounted = false;
-      listener.subscription.unsubscribe();
+      unsubscribeAuth?.();
     };
   }, []);
 
